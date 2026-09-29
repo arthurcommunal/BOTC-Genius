@@ -1,0 +1,27 @@
+[project]
+name = "project-botc"
+version = "0.1.0"
+description = "LLM assistant for BOTC game masters"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.142.0",
+    "numpy>=2.5.3",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "asgi-lifespan>=2.1.0",
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]
+load = [
+    "locust>=2.46.6",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+asyncio_mode = "auto"
+testpaths = ["serving/tests"]
