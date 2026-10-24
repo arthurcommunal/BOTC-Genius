@@ -38,7 +38,7 @@ async def latency_middleware(request: Request, call_next: CallNext) -> Response:
         response = await call_next(request)
         status = response.status_code
     finally:
-        duration = (perf_counter() - start)/1000
+        duration = (perf_counter() - start)*1000
         label = route_label(request=request)
         request.state.metrics.latency_window(latency_name(route=label, status_code=status)).record(duration)
     response.headers["X-Process-Time-Ms"] = str(duration)
