@@ -52,3 +52,8 @@ def service_unavailable(retry_after_s: int = 1) -> HTTPException:
 def tenant_not_found() -> HTTPException:
     return HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                          detail="Tenant id not found")
+
+
+def route_not_found() -> HTTPException:
+    return HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                         detail="Route not found")

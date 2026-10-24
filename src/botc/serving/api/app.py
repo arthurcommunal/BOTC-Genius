@@ -14,7 +14,7 @@ def create_app(settings: Settings) -> FastAPI:
     """Makes a complete and independent app."""
     app = FastAPI(lifespan=lifespan)
     app.state.settings = settings
-    # install_middleware(app) 
+    install_middleware(app) 
     app.include_router(router)
     return app
 
