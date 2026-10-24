@@ -1,0 +1,16 @@
+[
+  {
+    "tenant_id": "user",
+    "rate": 1.0,
+    "capacity": 5,
+    "is_admin": false,
+    "key_hash": "7ad9c7f8a1a4903e5089a0c8e2f8a69959a37a5f0a178368bee28aabd036c2dc"
+  },
+  {
+    "tenant_id": "admin",
+    "rate": 1.0,
+    "capacity": 5,
+    "is_admin": true,
+    "key_hash": "275a5a6c66ecd9e4876da594c1323bb157dedbeab65619c11b2de75799e9a8a4"
+  }
+]
