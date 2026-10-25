@@ -5,7 +5,9 @@ description = "LLM assistant for BOTC game masters"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "beautifulsoup4>=4.15.0",
     "fastapi>=0.142.0",
+    "httpx>=0.28.1",
     "numpy>=2.5.3",
     "uvicorn[standard]>=0.54.0",
 ]
