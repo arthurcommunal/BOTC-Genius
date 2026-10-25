@@ -5,8 +5,8 @@ The same path as the server: index on disk -> vector store, question -> query em
 import argparse
 from pathlib import Path
 
-from botc.retrieval.index import build_store, load_index
 from botc.retrieval.embedder import SentenceTransformerEmbedder
+from botc.retrieval.index import build_store, load_index
 
 DEFAULT_INDEX = Path("data/index/bge-small-en-v1.5_200w")
 
