@@ -1,4 +1,4 @@
-"""Embedders: shared interface and fake impementation for testing"""
+"""Embedders: shared interface, fake implementation for testing, real sentence-transformers model"""
 
 from __future__ import annotations
 
@@ -14,8 +14,15 @@ DTYPE = np.float32
 
 class Embedder(Protocol):
     """Tranforms text into vector of fixed dimension
-    
-    - `embed(texts)` returns a np.ndarray of shape (len(texts), dim) and of type float32, line[i] <-> texts[i].
+
+    Retrieval is asymmetric: short questions are compared to longer passages, and a retrieval
+    model may encode each side differently. Hence two methods:
+    - `embed(texts)`: questions (what the API receives).
+    - `embed_documents(texts)`: passages of the corpus (what the index stores).
+    A symmetric embedder implements both the same way.
+
+    For both methods:
+    - returns a np.ndarray of shape (len(texts), dim) and of type float32, line[i] <-> texts[i].
     - Each line is l2-normalized: the embedder guaranties the norm.
     - An empy list returns a np.ndarray of shape (0, dim).
     - Embeddings are mutually indepedent within the batch"""
@@ -23,7 +30,9 @@ class Embedder(Protocol):
     @property
     def dim(self) -> int: ...
 
-    def embed(self, texts: Sequence[str]) -> np.ndarray: ... 
+    def embed(self, texts: Sequence[str]) -> np.ndarray: ...
+
+    def embed_documents(self, texts: Sequence[str]) -> np.ndarray: ...
 
 def seed_from_text(text: str) -> int:
     """Returns a stable 8-bytes seed between processes for a text: SHA-256 on UTF-8 bytes."""
@@ -74,4 +83,61 @@ class HashEmbedder:
             emb = self._embed_one(text)
             embeddings[i] = emb
         return embeddings
+
+    def embed_documents(self, texts: Sequence[str]) -> np.ndarray:
+        """Symmetric: a passage is embedded exactly like a question."""
+        return self.embed(texts)
+
+
+# model name -> (query prefix, passage prefix), as given on each model card.
+MODEL_PREFIXES = {
+    "BAAI/bge-small-en-v1.5": ("Represent this sentence for searching relevant passages: ", ""),
+    "BAAI/bge-base-en-v1.5": ("Represent this sentence for searching relevant passages: ", ""),
+    "intfloat/e5-small-v2": ("query: ", "passage: "),
+    "intfloat/e5-base-v2": ("query: ", "passage: "),
+}
+DEFAULT_MODEL = "BAAI/bge-small-en-v1.5"
+
+
+class SentenceTransformerEmbedder:
+    """Real embedder: a sentence-transformers model, used asymmetrically.
+
+    Retrieval models are trained on (question, passage) pairs, each side marked by a prefix.
+    The same prefixes must be used at inference, otherwise the scores drop.
+    `model` lets the tests pass a fake model instead of downloading the real one."""
+
+    def __init__(self, model_name: str = DEFAULT_MODEL, model=None, batch_size: int = 32):
+        if model_name not in MODEL_PREFIXES:
+            raise ValueError(f"Unknown prefixes for {model_name}, add them to MODEL_PREFIXES")
+        self.model_name = model_name
+        self.query_prefix, self.passage_prefix = MODEL_PREFIXES[model_name]
+        if model is None:
+            from sentence_transformers import SentenceTransformer
+            model = SentenceTransformer(model_name)
+        dim = model.get_embedding_dimension()
+        if dim is None:  
+            raise ValueError(f"{model_name} does not declare its embedding dimension")
+        self._model = model
+        self._dim = dim
+        self._batch_size = batch_size
+
+    @property
+    def dim(self) -> int:
+        return self._dim
+
+    def embed(self, texts: Sequence[str]) -> np.ndarray:
+        return self._encode(texts, self.query_prefix)
+
+    def embed_documents(self, texts: Sequence[str], show_progress: bool = False) -> np.ndarray:
+        return self._encode(texts, self.passage_prefix, show_progress)
+
+    def _encode(self, texts: Sequence[str], prefix: str, show_progress: bool = False) -> np.ndarray:
+        if isinstance(texts, str):
+            raise TypeError("embed takes a Sequence of strings as input, not a string")
+        if len(texts) == 0:
+            return np.empty(shape=(0, self.dim), dtype=DTYPE)
+        vectors = self._model.encode([prefix + t for t in texts], batch_size=self._batch_size,
+                                     normalize_embeddings=True, convert_to_numpy=True,
+                                     show_progress_bar=show_progress)
+        return vectors.astype(DTYPE)
 

@@ -9,6 +9,7 @@ dependencies = [
     "fastapi>=0.142.0",
     "httpx>=0.28.1",
     "numpy>=2.5.3",
+    "sentence-transformers>=6.2.0",
     "uvicorn[standard]>=0.54.0",
 ]
 

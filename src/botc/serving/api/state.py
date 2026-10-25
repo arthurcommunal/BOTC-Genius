@@ -11,7 +11,7 @@ from typing import TypedDict
 from fastapi import FastAPI
 
 from botc.retrieval.corpus import load_corpus
-from botc.retrieval.embedder import HashEmbedder
+from botc.retrieval.embedder import Embedder, HashEmbedder
 from botc.retrieval.store import Hit, ShardedVectorStore
 from botc.serving.batcher import Batcher
 from botc.serving.cache import LRUCache
@@ -46,11 +46,11 @@ def build_state(settings: Settings) -> AppState:
     
     cache = LRUCache[tuple[str, int], list[Section]](capacity=settings.cache_capacity)
 
-    embedder = HashEmbedder(dim=settings.embedding_dim)
+    embedder: Embedder = HashEmbedder(dim=settings.embedding_dim)
     store = ShardedVectorStore.create(dim=settings.embedding_dim, num_shards=settings.n_shards)
     corpus = load_corpus(settings.files_path)
     ids, texts = zip(*corpus)
-    vectors = embedder.embed(texts)
+    vectors = embedder.embed_documents(texts)  # corpus side; questions go through embed()
     store.add(ids=ids, vectors=vectors)
     index_corpus = dict(corpus)
 
