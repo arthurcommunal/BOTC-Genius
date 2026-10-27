@@ -10,6 +10,7 @@ dependencies = [
     "httpx>=0.28.1",
     "numpy>=2.5.3",
     "ruff>=0.17.3",
+    "scikit-learn>=1.9.1",
     "sentence-transformers>=6.2.0",
     "uvicorn[standard]>=0.54.0",
 ]
@@ -20,7 +21,8 @@ dev = [
     "httpx>=0.28.1",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
-    "hypothesis>=6.170.1"
+    "hypothesis>=6.170.1",
+    "pyright>=1.1.414",
 ]
 load = [
     "locust>=2.46.6",
@@ -29,6 +31,11 @@ load = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests/"]
+
+[tool.pyright]
+include = ["src"]
+typeCheckingMode = "standard"
+strict = ["src"]
 
 [build-system]
 requires = ["hatchling"]
