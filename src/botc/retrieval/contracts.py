@@ -3,7 +3,7 @@
 Read this file before calling the module. Changing it is an architecture decision."""
 
 from dataclasses import dataclass
-from typing import NewType
+from typing import NewType, Protocol
 
 ### --- entities.py --- ###
 
@@ -97,3 +97,70 @@ class MassFloor:
 
 
 FusionRule = ConstantBoost | MassFloor
+
+
+### --- budget.py --- ###
+# The context given to the generator holds the detected glossary definitions and the best chunks, within a budget
+# of tokens counted with the tokenizer of the generator.
+
+ModelName = NewType("ModelName", str)    # Hugging Face id of the generator, whose tokenizer counts the budget
+TokenCount = NewType("TokenCount", int)  # number of tokens of the generator's tokenizer, >= 0
+ChunkText = NewType("ChunkText", str)    # text of a chunk as put in the context: header + "\n\n" + text
+
+
+class TokenCounter(Protocol):
+    """Counts the tokens of a text with the tokenizer of the generator, without special tokens."""
+
+    def __call__(self, text: str) -> TokenCount: ...
+
+
+### --- guided.py --- ###
+
+DEFAULT_BUDGET = TokenCount(2000)
+DEFAULT_THRESHOLD_ROLES = Similarity(0.9)  # calibrated on wiki sentences (src/botc/experiments/threshold.py),
+DEFAULT_THRESHOLD_TERMS = Similarity(0.8)  # lowered from 1.0 for roles to tolerate typos in questions
+
+
+@dataclass(frozen=True)
+class GuidedConfig:
+    """Settings of the guided retriever: how to fuse, how many tokens, and the matching thresholds.
+
+    Valid if budget >= 0 and both thresholds are in [0, 1]. The budget covers the glossary definitions
+    and the chunks, not the prompt template of the generator."""
+
+    rule: FusionRule
+    budget: TokenCount = DEFAULT_BUDGET
+    threshold_roles: Similarity = DEFAULT_THRESHOLD_ROLES
+    threshold_terms: Similarity = DEFAULT_THRESHOLD_TERMS
+
+    def __post_init__(self) -> None:
+        if self.budget < 0:
+            raise ValueError(f"Negative budget: {self.budget}")
+        for name, threshold in [("roles", self.threshold_roles), ("terms", self.threshold_terms)]:
+            if not 0 <= threshold <= 1:
+                raise ValueError(f"Threshold of {name} out of [0, 1]: {threshold}")
+
+
+@dataclass(frozen=True)
+class Retrieval:
+    """What the guided retriever found for one question, and what it puts in the context.
+
+    Valid if tokens >= 0, and neither chunks nor definition texts contain duplicates. That tokens is the cost of the
+    definitions plus the chunks is guaranteed by the retriever, which knows the costs."""
+
+    question: Question
+    roles: tuple[Match[RoleName], ...]      # detected roles, as returned by EntityMatcher.match
+    terms: tuple[Match[GlossaryTerm], ...]  # detected glossary terms, as returned by EntityMatcher.match
+    definitions: tuple[GlossaryEntry, ...]  # in the context; one per paragraph (synonyms share it), order of `terms`
+    bonus: Boost                            # bonus given to the chunks of the pages of the detected roles
+    chunks: tuple[ChunkId, ...]             # in the context, by decreasing fused score
+    tokens: TokenCount                      # definitions + chunks; above the budget only if the definitions alone are
+
+    def __post_init__(self) -> None:
+        if self.tokens < 0:
+            raise ValueError(f"Negative token count: {self.tokens}")
+        if len(set(self.chunks)) != len(self.chunks):
+            raise ValueError(f"Duplicate chunks in the context of {self.question!r}")
+        texts = [entry.text for entry in self.definitions]
+        if len(set(texts)) != len(texts):
+            raise ValueError(f"Duplicate definitions in the context of {self.question!r}")

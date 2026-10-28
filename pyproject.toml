@@ -32,6 +32,8 @@ load = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests/"]
+markers = ["slow: needs network or a model download (run with -m slow)"]
+addopts = "-m 'not slow'"
 
 [tool.pyright]
 include = ["src"]
