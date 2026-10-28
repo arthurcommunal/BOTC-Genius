@@ -89,7 +89,7 @@ def read_lines(path: Path) -> list[dict[str, Any]]:
 # --- sample_sentences ---
 
 def test_sampling_is_reproducible_with_the_same_seed():
-    """Calibration must be rerun on the same sentences, so the draw depends on the seed only.
+    """The experiment must be reproducible: the draw depends on the seed only.
 
     Two calls with the same chunks, n and seed return the same sentences, with the same ids, in the same order."""
     chunks = [chunk(f"Imp#{i}", sentence(10, f"w{i}")) for i in range(20)]
@@ -134,7 +134,7 @@ def test_the_glossary_page_is_never_sampled():
 def test_sampled_sentences_are_numbered_and_keep_their_chunk():
     """Each sentence gets an id from 0 to n-1 in the order of the draw, and the id of its chunk.
 
-    The chunk id lets the judge and Arthur go back to the source."""
+    The chunk id lets the judge and a human reviewer go back to the source."""
     chunks = [chunk("Imp#0", sentence(10, "imp")), chunk("Monk#2", sentence(10, "monk"), title="Monk")]
     drawn = sample_sentences(chunks, n=2, seed=Seed(0))
     assert [s.id for s in drawn] == [0, 1]
@@ -178,7 +178,7 @@ def test_t_min_is_the_matching_threshold():
 # --- write_candidates ---
 
 def test_a_candidate_line_holds_everything_the_judge_needs(tmp_path: Path):
-    """The judging session reads only candidates.jsonl, so each line is self-contained.
+    """The judge reads only candidates.jsonl, so each line is self-contained.
 
     It holds the ids, the source chunk, the sentence as written, the normalized span, the entity, the score
     and the description of the entity."""
@@ -218,7 +218,7 @@ def test_an_entity_without_description_raises(tmp_path: Path):
 # --- read_judgments ---
 
 def test_judgments_are_aligned_on_the_candidates(tmp_path: Path):
-    """The judging session may write its judgments in any order.
+    """The judge may write its judgments in any order.
 
     The labels come back in the order of the candidates, matched by candidate_id."""
     path = tmp_path / "judgments.jsonl"

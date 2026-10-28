@@ -1,7 +1,8 @@
 """Experiment to determine an efficient threshold for the entity detection.
 
-Sentences of the wiki are matched at a low threshold t_min, every match is judged once (by a separate Claude
-session), and precision, relative recall and F1 are then computed for every threshold >= t_min without new judgments.
+Sentences of the wiki are matched at a low threshold t_min, every match is judged once, outside of this module
+(by an LLM following docs/prompts/judge_entity_match.md), and precision, relative recall and F1 are then computed
+for every threshold >= t_min without new judgments.
 
     python -m botc.experiments.threshold sample   # writes data/experiments/threshold/{roles,terms}/candidates.jsonl
     python -m botc.experiments.threshold curves   # reads the judgments.jsonl next to them, plots and prints the choice
