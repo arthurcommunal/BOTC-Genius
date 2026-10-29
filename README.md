@@ -1,4 +1,4 @@
-# BOTC Assistant
+# BOTC Genius
 
 > **Status: in progress.** Interfaces, data formats and results may change at any time.
 
